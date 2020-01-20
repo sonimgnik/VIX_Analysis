@@ -1,0 +1,230 @@
+---
+title: "VIY Stock Analysis"
+date: '`r format(Sys.Date(), "%B %d, %Y")`'
+output: 
+  html_document:
+    toc: true
+    toc_float:
+      collapsed: true
+      smooth_scroll: true
+      number_sections: true
+---
+## Data Overview {.tabset}
+```{r Package Check, message=FALSE, warning=FALSE, include=FALSE, paged.print=FALSE, results='hide'}
+# packages = c("quantmod","xlsx","dplyr","ggplot2","tidyverse","lubridate","TTR","filesstrings",
+#              "corrplot", "xts","Hmisc","rvest","corrplot","plotly","lubridate","forcats",
+#              "stringr", "xts", "scales", "progress", "rJava")
+# 
+# package.check <- lapply(packages, FUN = function(x) {
+#   if (!require(x, character.only = TRUE)) {
+#     install.packages(x, dependencies = TRUE)
+#     library(x, character.only = TRUE)
+#   }
+# })
+# 
+# rm('packages')
+```
+
+```{r Name Variable, message=FALSE, warning=FALSE, include=FALSE, paged.print=FALSE, results='hide'}
+stock <- 'VIXY'
+```
+
+```{r Setup Environment, message=FALSE, warning=FALSE, include=FALSE, paged.print=FALSE, results='hide'}
+
+## Provide the dir name(i.e sub dir) that you want to create under main dir:
+dir <- file.path("C:/Users/Nick/Desktop/Desktop/Lab/financial_analysis/")
+
+getwd()
+
+# search()
+
+options(scipen = 999)
+```
+
+### Data Overview
+
+```{r data overview, echo=FALSE, message=FALSE, warning=FALSE, comment=NA, paged.print=FALSE}
+cat('Stock Ticker:', stock)
+
+cat('This Ddata is sourced from Yahoo.com, using he quantmod package.')
+```
+
+### 52 Week Data Summary
+
+```{r Call Single Ticker 52 Week, message=FALSE, warning=FALSE, include=FALSE, paged.print=FALSE, results='hide'}
+
+require(quantmod)
+
+start <- Sys.Date() - 364
+end <- Sys.Date()
+
+tickers.sub <- c(stock)
+
+data.sub <- NULL
+for(ticker.sub in tickers.sub)
+  data.sub <- na.omit(cbind(data.sub,getSymbols(ticker.sub, from = start, to = end,auto.assign = F)))
+
+names(data.sub) <- c("open","high", "low", "close", "volume","adjusted")
+#data.sub <- data.frame(data.sub[,-1], row.names = data.sub[,1])
+# data.sub$date <- as.POSIXct(data.sub$date, format = "%Y-%m-%d", tz = "America/New_York")
+str(data.sub)
+
+head(data.sub,3) 
+tail(data.sub,3)
+
+rm('tickers.sub', 'ticker.sub')
+
+write.csv(data.sub, paste(stock, "_sub.xlsx", sep=""))
+
+```
+
+### 52 Week Data Summary
+
+```{r 52 week data summary}
+require(Hmisc)
+describe(data.sub)
+```
+
+### Historical Data Summary
+
+```{r Call Single Ticker Historical, message=FALSE, warning=FALSE, include=FALSE, paged.print=FALSE, results='hide'}
+
+require(quantmod)
+
+start <- as.Date("2012-01-01")
+end <- Sys.Date()
+
+tickers.hist <- c(stock)
+
+data.hist <- NULL
+for(ticker.hist in tickers.hist)
+  data.hist <- na.omit(cbind(data.hist,getSymbols(ticker.hist, from = start, to = end,auto.assign = F)))
+
+names(data.hist) <- c("open","high", "low", "close", "volume","adjusted")
+
+head(data.hist,3) 
+tail(data.hist,3)
+
+rm('tickers.hist', 'ticker.hist')
+
+write.csv(data.hist, paste(stock, "_hist.xlsx", sep=""))
+```
+
+
+```{r historical week data summary}
+require(Hmisc)
+describe(data.sub)
+```
+
+################################################################################################
+
+## Charts {.tabset}
+
+### 3 Month Candle Stick Chart
+
+```{r 3 Month candle stick chart, echo=FALSE, message=FALSE, warning=FALSE, comment=NA}
+require(quantmod)
+
+cat(("3 Month Candle Chart plus Technicals"),'\n')
+candleChart(data.hist,subset='last 3 months', multi.col=TRUE,theme='white',TA="addVo();addBBands();addEMA();addSMA(); addRSI()") 
+```
+
+### 6 Month Candle Stick Chart
+
+```{r 6 Month candle stick chart, echo=FALSE, message=FALSE, warning=FALSE, comment=NA}
+require(quantmod)
+
+cat(("6 Month Candle Chart plus Technicals"),'\n')
+candleChart(data.hist,subset='last 6 months', multi.col=TRUE,theme='white',TA="addVo();addBBands();addEMA();addSMA(); addRSI()") 
+```
+
+## Descriptive Statistics {.tabset}
+
+
+
+```{r Descriptive Statistics subset1, echo=FALSE, message=FALSE, warning=FALSE, comment=NA, paged.print=FALSE}
+#Calculate and print measures of central tendencies
+cat(("Measures of central tendancy:"),'\n')
+cat('\n')
+summary((data.sub$adjusted),'\n')
+cat('\n')
+cat("Standard deviation:",sd(data.sub$adjusted),'\n')
+
+options(digits = 4)
+cat('\n')
+cat("Mean:",signif(mean(data.sub$adjusted),4),'\n')
+cat('\n')
+cat("Standard Deviation:",signif(sd(data.sub$adjusted),4),'\n')
+cat('\n')
+cat("High:",signif(max(data.sub$high),4),'\n')
+cat('\n')
+cat("Lo:",signif(min(data.sub$low),4),'\n')
+
+# cat("Mode adjusted Prices:", names(table(data.sub$adjusted))[table(data.sub$adjusted)==max(table(data.sub$adjusted))],'\n')
+# cat('\n')
+# cat("Mode Highs:", names(table(data.sub$high))[table(data.sub$high)==max(table(data.sub$high))],'\n')
+# cat('\n')
+# cat("Mode Lows:", names(table(data.sub$low))[table(data.sub$low)==max(table(data.sub$low))],'\n')
+# cat('\n')
+# 
+# cat(("The following histograms describe the frequency and range of the adjusted closing prices and the volume for the past 52 Weeks."),'\n')
+# cat('\n')
+# 
+# #Adjust the breaks or xlim to better fit the data.
+# histinfo3<-hist(data.sub$adjusted, breaks=60,xlim=c(0,50), xlab="adjusted Prices", main="Frequency and Range of adjusted Closing Prices Subset", col="lightblue", prob=T)
+# chart1 <- lines(density(data.sub$adjusted))
+# cat('\n')
+# 
+# histinfo4<-hist(data.sub$volume, breaks=160, xlim=c(0,20000000), xlab="volume", main="Frequency of volume Subset", col="lightblue", prob=T)
+# lines(density(data.sub$volume))
+```
+
+## Price Plots 
+
+```{r price plot, echo=FALSE, message=FALSE, warning=FALSE}
+plot(data.sub$adjusted, main="52 Week Data", xlab="ajusted price", ylab="volume", col="red")
+```
+
+```{r univariate analysis sub data, echo=FALSE, message=FALSE, warning=FALSE}
+# boxplot(data.sub$adjusted,data=data.sub, main="Car Milage Data", 
+#    xlab="Number of Cylinders", ylab="Miles Per Gallon")
+```
+
+```{r historic price plot, echo=FALSE, message=FALSE, warning=FALSE}
+plot(data.hist$adjusted, main="Historic Data", xlab="ajusted price", ylab="volume", col="red")
+```
+
+## Correlation 
+
+```{r Fetch Ticker Data for Correlation, message=FALSE, warning=FALSE, include=FALSE}
+
+require(quantmod)  
+
+start <- Sys.Date()-30
+end <- Sys.Date()
+
+tickers.cor <- c(stock,"^VIX", "SPY", "^DJI", "GLD", "GBTC","^TNX")
+data.cor <- NULL
+
+for(ticker.cor in tickers.cor)
+  data.cor <- cbind(data.cor,getSymbols(ticker.cor, from = start, to = end,auto.assign = F))
+
+rm("tickers.cor", "ticker.cor")
+
+library(corrplot)
+
+cor.table <- data.cor[, c(6,12,18,24,30,36)]
+cor.table <- cor(cor.table)
+cor.table <- round(cor.table,4)
+
+rm(data.cor)
+```
+
+```{r correlation table, echo = FALSE, results = 'asis'}
+library(knitr)
+kable(cor.table[1:6, ], caption = "Correlation Table")
+```
+
+
+
+
